@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NugetCopier": {
+      "commandName": "Project",
+      "commandLineArgs": "../"
+    }
+  }
+}

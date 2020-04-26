@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "NugetPusher": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\OneDrive\\Projects\\Libraries\\Scar.Common\\NetStandard\\Common\\bin\\Debug"
+    }
+  }
+}
