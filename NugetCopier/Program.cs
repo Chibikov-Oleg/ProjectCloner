@@ -135,6 +135,12 @@ namespace Scar.NugetCopier
 
             void DeleteOutdatedPackagesFromCache(string basePath)
             {
+                if (!Directory.Exists(basePath))
+                {
+                    Console.WriteLine($"{basePath} Nuget cache does not exist");
+                    return;
+                }
+
                 var scarPackagesDirectories = Directory.EnumerateDirectories(basePath, "scar.*");
                 foreach (var packageDirectoryPath in scarPackagesDirectories)
                 {
