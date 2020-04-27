@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,14 +50,14 @@ namespace Scar.NugetPusher
             if (nupkgFiles.Length >= 2)
             {
                 var lastTwoPackages = nupkgFiles.Take(2).ToArray();
-                var lastPackagePath = lastTwoPackages.First();
-                var previousPackagePath = lastTwoPackages.Last();
+                var lastPackagePath = lastTwoPackages[0];
+                var previousPackagePath = lastTwoPackages[1];
                 var processUtility = host.Services.GetService<IProcessUtility>();
                 var fileHasher = host.Services.GetService<IFileHasher>();
-                var lastPackageHash = await GetPackageHashAsync(lastPackagePath, processUtility, fileHasher, sourceDirectoryPath).ConfigureAwait(false);
-                var previousPackageHash = await GetPackageHashAsync(previousPackagePath, processUtility, fileHasher, sourceDirectoryPath).ConfigureAwait(false);
-                var areFilesEqual = lastPackageHash.SequenceEqual(previousPackageHash);
-                if (!areFilesEqual)
+                var (lastPackageDllHash, lastPackageNuspecText) = await GetPackageHashAsync(lastPackagePath, processUtility, fileHasher, sourceDirectoryPath).ConfigureAwait(false);
+                var (previousPackageDllHash, previousPackageNuspecText) = await GetPackageHashAsync(previousPackagePath, processUtility, fileHasher, sourceDirectoryPath).ConfigureAwait(false);
+                var arePackagesEqual = lastPackageDllHash.SequenceEqual(previousPackageDllHash) && Equals(lastPackageNuspecText, previousPackageNuspecText);
+                if (!arePackagesEqual)
                 {
                     await PushNugetAsync(processUtility, lastPackagePath).ConfigureAwait(false);
                 }
@@ -99,7 +100,7 @@ namespace Scar.NugetPusher
             }
         }
 
-        static async Task<byte[]> GetPackageHashAsync(string lastPackagePath, IProcessUtility processUtility, IFileHasher fileHasher, string sourcePath)
+        static async Task<(byte[] DllHash, string NuspecText)> GetPackageHashAsync(string lastPackagePath, IProcessUtility processUtility, IFileHasher fileHasher, string sourcePath)
         {
             var packageInfo = NugetHelper.ParseNugetPackageInfoForPath(lastPackagePath) ?? throw new InvalidOperationException("Package info is null");
 
@@ -109,16 +110,31 @@ namespace Scar.NugetPusher
                 Directory.CreateDirectory(versionDirectoryPath);
             }
 
-            var fileName = $"{packageInfo.Name}.dll";
-            await processUtility.ExecuteCommandAsync(
-                    Path.Combine(AssemblyDirectory, "7za.exe"),
-                    $"e \"{lastPackagePath}\" -o\"{versionDirectoryPath}\" {fileName} -r -y",
-                    CancellationToken.None)
-                .ConfigureAwait(false);
-            var hash = fileHasher.GetSha512Hash(Path.Combine(versionDirectoryPath, fileName));
+            var dllFileName = $"{packageInfo.Name}.dll";
+            var nuspecFileName = $"{packageInfo.Name}.nuspec";
+            await ExtractPackageAsync(lastPackagePath, processUtility, versionDirectoryPath, dllFileName).ConfigureAwait(false);
+            await ExtractPackageAsync(lastPackagePath, processUtility, versionDirectoryPath, nuspecFileName).ConfigureAwait(false);
+            var dllFilePath = Path.Combine(versionDirectoryPath, dllFileName);
+            var nuspecFilePath = Path.Combine(versionDirectoryPath, nuspecFileName);
+            var dllHash = fileHasher.GetSha512Hash(dllFilePath);
+
+            // As version might differ but the rest stay the same we need to remove Version to do a proper comparison
+            var nuspecTextWithoutVersion = await RemoveVersionTagAsync(nuspecFilePath).ConfigureAwait(false);
 
             Directory.Delete(versionDirectoryPath, true);
-            return hash;
+            return (dllHash, nuspecTextWithoutVersion);
+        }
+
+        static async Task<string> RemoveVersionTagAsync(string nuspecFilePath)
+        {
+            var text = await File.ReadAllTextAsync(nuspecFilePath).ConfigureAwait(false);
+            return Regex.Replace(text, @"\<Version\>.*\<\/Version\>", string.Empty, RegexOptions.IgnoreCase);
+        }
+
+        static async Task ExtractPackageAsync(string lastPackagePath, IProcessUtility processUtility, string versionDirectoryPath, string fileName)
+        {
+            await processUtility.ExecuteCommandAsync(Path.Combine(AssemblyDirectory, "7za.exe"), $"e \"{lastPackagePath}\" -o\"{versionDirectoryPath}\" {fileName} -r -y", CancellationToken.None)
+                .ConfigureAwait(false);
         }
 
         static IHost BuildAndRunHost(string[] args)

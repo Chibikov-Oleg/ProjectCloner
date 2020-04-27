@@ -9,9 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.3" />
-    <PackageReference Include="Scar.Common" Version="1.1.7421.22702" />
-    <PackageReference Include="Scar.Common.Cryptography" Version="1.1.7421.23352" />
-    <PackageReference Include="Scar.Common.Processes" Version="1.1.7421.20137" />
+    <PackageReference Include="Scar.Common" Version="1.1.7422.27270" />
+    <PackageReference Include="Scar.Common.Cryptography" Version="1.1.7422.27175" />
+    <PackageReference Include="Scar.Common.Processes" Version="1.1.7422.27174" />
   </ItemGroup>
 
   <ItemGroup>
