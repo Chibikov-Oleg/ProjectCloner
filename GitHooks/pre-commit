@@ -1,8 +1,8 @@
 #!/bin/sh
 cmd.exe /c "Tools\NugetCopier\Scar.NugetCopier.exe ."
 
-#sync deleted files
-git add -u .
-
 #sync added files only in Nuget folder (for some reason it doesn't work with -u)
 git add Nuget/*
+
+#sync deleted files
+git add -u .

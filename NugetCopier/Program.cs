@@ -7,11 +7,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using Scar.Common.Comparers;
 
 namespace Scar.NugetCopier
 {
     class Program
     {
+        const string ScarLocalNugetPath = "D:\\OneDrive\\Projects\\Nuget";
+
         static async Task Main(string[] args)
         {
             var sourcePath = args?.Length == 1 ? args[0] : AppDomain.CurrentDomain.BaseDirectory;
@@ -27,7 +30,7 @@ namespace Scar.NugetCopier
                 Directory.CreateDirectory(destinationPath);
             }
 
-            var csprojFiles = Directory.GetFiles(sourcePath, "*.csproj", SearchOption.AllDirectories);
+            var csprojFiles = Directory.EnumerateFiles(sourcePath, "*.csproj", SearchOption.AllDirectories);
             var packages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var nugetCacheRootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
 
@@ -97,7 +100,7 @@ namespace Scar.NugetCopier
                 _ = packages ?? throw new InvalidOperationException("packages is null");
 
                 var nupkgRegex = new Regex("^(.*?)\\.((?:\\.?[0-9]+){3,}(?:[-a-z]+)?)\\.nupkg$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                var destinationNugetFiles = Directory.GetFiles(destinationPath, "*.nupkg", SearchOption.AllDirectories);
+                var destinationNugetFiles = Directory.EnumerateFiles(destinationPath, "*.nupkg", SearchOption.AllDirectories);
                 foreach (var nugetFilePath in destinationNugetFiles)
                 {
                     var fileName = Path.GetFileName(nugetFilePath);
@@ -127,6 +130,25 @@ namespace Scar.NugetCopier
             }
 
             DeleteNonExistingPackages();
+
+            var fileNameComparer = new WinStringComparer();
+
+            void DeleteOutdatedPackagesFromCache(string basePath)
+            {
+                var scarPackagesDirectories = Directory.EnumerateDirectories(basePath, "scar.*");
+                foreach (var packageDirectoryPath in scarPackagesDirectories)
+                {
+                    var versionSubDirectories = Directory.EnumerateDirectories(packageDirectoryPath).OrderByDescending(x => x, fileNameComparer);
+                    foreach (var versionDirectoryPath in versionSubDirectories.Skip(1))
+                    {
+                        Directory.Delete(versionDirectoryPath, true);
+                        Console.WriteLine($"Deleted outdated package {versionDirectoryPath}");
+                    }
+                }
+            }
+
+            DeleteOutdatedPackagesFromCache(nugetCacheRootPath);
+            DeleteOutdatedPackagesFromCache(ScarLocalNugetPath);
         }
     }
 }
