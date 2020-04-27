@@ -1,11 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Authors>Scar</Authors>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Scar.Common" Version="1.1.7421.36987" />
   </ItemGroup>

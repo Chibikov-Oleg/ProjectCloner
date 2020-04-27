@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace ProjectCloner
+namespace Scar.ProjectCloner
 {
     static class Program
     {
@@ -47,7 +47,7 @@ namespace ProjectCloner
 
                     RenameDirectory(newDirectoryPath, oldName, newName);
                 }
-                catch (Exception ex)
+                catch (IOException ex)
                 {
                     Console.WriteLine(ex);
                     continue;
@@ -73,7 +73,7 @@ namespace ProjectCloner
                 foreach (var filePath in Directory.GetFiles(directoryPath))
                 {
                     var newFilePath = filePath;
-                    if (filePath.Contains(oldName))
+                    if (filePath.Contains(oldName, StringComparison.OrdinalIgnoreCase))
                     {
                         newFilePath = filePath.Replace(oldName, newName, StringComparison.OrdinalIgnoreCase);
                         File.Move(filePath, newFilePath);
@@ -111,6 +111,7 @@ namespace ProjectCloner
                 }
 
                 var dirs = dir.GetDirectories();
+
                 // If the destination directory doesn't exist, create it.
                 if (!Directory.Exists(destDirectoryPath))
                 {
