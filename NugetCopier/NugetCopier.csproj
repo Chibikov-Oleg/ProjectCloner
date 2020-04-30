@@ -1,7 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Scar.Common" Version="1.1.7421.36987" />
+    <PackageReference Include="Scar.Common" Version="1.1.7424.15457" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="7za.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="7za.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="7zxa.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

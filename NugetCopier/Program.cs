@@ -14,6 +14,7 @@ namespace Scar.NugetCopier
     class Program
     {
         const string ScarLocalNugetPath = "D:\\OneDrive\\Projects\\Nuget";
+        const string ProjectBuiltinNugetDirectoryName = "Nuget";
 
         static async Task Main(string[] args)
         {
@@ -24,7 +25,7 @@ namespace Scar.NugetCopier
                 throw new InvalidOperationException($"Directory does not exist: {sourcePath}");
             }
 
-            var destinationPath = Path.Combine(sourcePath, "Nuget");
+            var destinationPath = Path.Combine(sourcePath, ProjectBuiltinNugetDirectoryName);
             if (!Directory.Exists(destinationPath))
             {
                 Directory.CreateDirectory(destinationPath);
@@ -34,127 +35,127 @@ namespace Scar.NugetCopier
             var packages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var nugetCacheRootPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
 
-            static string GetFullName(string name, string version)
-            {
-                return $"{name}.{version}";
-            }
-
             foreach (var csprojFilePath in csprojFiles)
             {
-                using var stream = File.OpenRead(csprojFilePath);
-                var xml = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None).ConfigureAwait(false);
-
-                IEnumerable<(string Name, string Version)> GetScarPackageReferences()
+                var scarPackageReferences = await GetScarPackageReferencesFromProjectFileAsync(csprojFilePath).ConfigureAwait(false);
+                foreach (var (name, version) in scarPackageReferences)
                 {
-                    var valueTuples = xml.XPathSelectElements("//PackageReference")
-                        .Select(
-                            pr =>
-                            {
-                                var name = pr.Attribute("Include");
-                                var version = pr.Attribute("Version");
-                                if (name == null || version == null)
-                                {
-                                    return default;
-                                }
-
-                                return (Name: name.Value, Version: version.Value);
-                            })
-                        .Where(x => x != default && x.Name.StartsWith("Scar", StringComparison.OrdinalIgnoreCase));
-                    return valueTuples;
-                }
-
-                var scarPackageReferences = GetScarPackageReferences();
-                foreach (var packageReference in scarPackageReferences)
-                {
-                    void ClonePackageIfExistsInCache()
-                    {
-                        _ = packages ?? throw new InvalidOperationException("packages is null");
-                        _ = nugetCacheRootPath ?? throw new InvalidOperationException("nugetCacheRootPath is null");
-                        _ = destinationPath ?? throw new InvalidOperationException("destinationPath is null");
-
-                        var (name, version) = packageReference;
-                        var fullName = GetFullName(name, version);
-                        if (!packages.Contains(fullName))
-                        {
-                            packages.Add(fullName);
-                            var packageFileName = $"{fullName}.nupkg";
-                            var packageNugetCachePath = Path.Combine(nugetCacheRootPath, name, version, packageFileName);
-                            var destinationFilePath = Path.Combine(destinationPath, packageFileName);
-                            if (File.Exists(packageNugetCachePath))
-                            {
-                                if (!File.Exists(destinationFilePath))
-                                {
-                                    File.Copy(packageNugetCachePath, destinationFilePath);
-                                    Console.WriteLine($"Copied {fullName} from cache to {destinationPath}");
-                                }
-                            }
-                        }
-                    }
-
-                    ClonePackageIfExistsInCache();
+                    ClonePackageIfExistsInCache(packages, name, version, nugetCacheRootPath, destinationPath);
                 }
             }
 
-            void DeleteNonExistingPackages()
-            {
-                _ = packages ?? throw new InvalidOperationException("packages is null");
-
-                var nupkgRegex = new Regex("^(.*?)\\.((?:\\.?[0-9]+){3,}(?:[-a-z]+)?)\\.nupkg$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                var destinationNugetFiles = Directory.EnumerateFiles(destinationPath, "*.nupkg", SearchOption.AllDirectories);
-                foreach (var nugetFilePath in destinationNugetFiles)
-                {
-                    var fileName = Path.GetFileName(nugetFilePath);
-                    var matches = nupkgRegex.Matches(fileName);
-                    if (matches.Count != 1)
-                    {
-                        continue;
-                    }
-
-                    var match = matches.Single();
-
-                    if (match.Groups.Count != 3)
-                    {
-                        continue;
-                    }
-
-                    var name = match.Groups[1].Value;
-                    var version = match.Groups[2].Value;
-                    var fullName = GetFullName(name, version);
-
-                    if (!packages.Contains(fullName))
-                    {
-                        File.Delete(nugetFilePath);
-                        Console.WriteLine($"Deleted {fullName} from {destinationPath}");
-                    }
-                }
-            }
-
-            DeleteNonExistingPackages();
+            DeleteNonExistingPackages(packages, destinationPath);
 
             var fileNameComparer = new WinStringComparer();
 
-            void DeleteOutdatedPackagesFromCache(string basePath)
+            DeleteOutdatedPackagesFromCache(nugetCacheRootPath, fileNameComparer);
+            DeleteOutdatedPackagesFromCache(ScarLocalNugetPath, fileNameComparer);
+        }
+
+        static async Task<IEnumerable<(string Name, string Version)>> GetScarPackageReferencesFromProjectFileAsync(string csprojFilePath)
+        {
+            await using var stream = File.OpenRead(csprojFilePath);
+            var xml = await XDocument.LoadAsync(stream, LoadOptions.None, CancellationToken.None).ConfigureAwait(false);
+            var scarPackageReferences = GetScarPackageReferences(xml);
+            return scarPackageReferences;
+        }
+
+        static IEnumerable<(string Name, string Version)> GetScarPackageReferences(XNode xml)
+        {
+            var valueTuples = xml.XPathSelectElements("//PackageReference")
+                .Select(
+                    pr =>
+                    {
+                        var name = pr.Attribute("Include");
+                        var version = pr.Attribute("Version");
+                        if (name == null || version == null)
+                        {
+                            return default;
+                        }
+
+                        return (Name: name.Value, Version: version.Value);
+                    })
+                .Where(x => x != default && x.Name.StartsWith("Scar", StringComparison.OrdinalIgnoreCase));
+            return valueTuples;
+        }
+
+        static void DeleteOutdatedPackagesFromCache(string basePath, IComparer<string> fileNameComparer)
+        {
+            if (!Directory.Exists(basePath))
             {
-                if (!Directory.Exists(basePath))
+                Console.WriteLine($"{basePath} Nuget cache does not exist");
+                return;
+            }
+
+            var scarPackagesDirectories = Directory.EnumerateDirectories(basePath, "scar.*");
+            foreach (var packageDirectoryPath in scarPackagesDirectories)
+            {
+                var versionSubDirectories = Directory.EnumerateDirectories(packageDirectoryPath).OrderByDescending(x => x, fileNameComparer);
+                foreach (var versionDirectoryPath in versionSubDirectories.Skip(1))
                 {
-                    Console.WriteLine($"{basePath} Nuget cache does not exist");
-                    return;
+                    Directory.Delete(versionDirectoryPath, true);
+                    Console.WriteLine($"Deleted outdated package {versionDirectoryPath}");
+                }
+            }
+        }
+
+        static void DeleteNonExistingPackages(ISet<string> packages, string destinationPath)
+        {
+            _ = packages ?? throw new InvalidOperationException("packages is null");
+
+            var nupkgRegex = new Regex("^(.*?)\\.((?:\\.?[0-9]+){3,}(?:[-a-z]+)?)\\.nupkg$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            var destinationNugetFiles = Directory.EnumerateFiles(destinationPath, "*.nupkg", SearchOption.AllDirectories);
+            foreach (var nugetFilePath in destinationNugetFiles)
+            {
+                var fileName = Path.GetFileName(nugetFilePath);
+                var matches = nupkgRegex.Matches(fileName);
+                if (matches.Count != 1)
+                {
+                    continue;
                 }
 
-                var scarPackagesDirectories = Directory.EnumerateDirectories(basePath, "scar.*");
-                foreach (var packageDirectoryPath in scarPackagesDirectories)
+                var match = matches.Single();
+
+                if (match.Groups.Count != 3)
                 {
-                    var versionSubDirectories = Directory.EnumerateDirectories(packageDirectoryPath).OrderByDescending(x => x, fileNameComparer);
-                    foreach (var versionDirectoryPath in versionSubDirectories.Skip(1))
+                    continue;
+                }
+
+                var name = match.Groups[1].Value;
+                var version = match.Groups[2].Value;
+                var fullName = GetFullName(name, version);
+
+                if (!packages.Contains(fullName))
+                {
+                    File.Delete(nugetFilePath);
+                    Console.WriteLine($"Deleted {fullName} from {destinationPath}");
+                }
+            }
+        }
+
+        static string GetFullName(string name, string version)
+        {
+            return $"{name}.{version}";
+        }
+
+        static void ClonePackageIfExistsInCache(ISet<string> packages, string name, string version, string nugetCacheRootPath, string destinationPath)
+        {
+            var fullName = GetFullName(name, version);
+            if (!packages.Contains(fullName))
+            {
+                packages.Add(fullName);
+                var packageFileName = $"{fullName}.nupkg";
+                var packageNugetCachePath = Path.Combine(nugetCacheRootPath, name, version, packageFileName);
+                var destinationFilePath = Path.Combine(destinationPath, packageFileName);
+                if (File.Exists(packageNugetCachePath))
+                {
+                    if (!File.Exists(destinationFilePath))
                     {
-                        Directory.Delete(versionDirectoryPath, true);
-                        Console.WriteLine($"Deleted outdated package {versionDirectoryPath}");
+                        File.Copy(packageNugetCachePath, destinationFilePath);
+                        Console.WriteLine($"Copied {fullName} from cache to {destinationPath}");
                     }
                 }
             }
-
-            DeleteOutdatedPackagesFromCache(nugetCacheRootPath);
-            DeleteOutdatedPackagesFromCache(ScarLocalNugetPath);
         }
     }
 }
