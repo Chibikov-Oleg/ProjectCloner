@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Scar.Common" Version="1.1.7426.25083" />
+    <PackageReference Include="Scar.Common" Version="1.1.7426.35936" />
     <PackageReference Include="Scar.Common.IO" Version="1.1.7426.23253" />
   </ItemGroup>
 

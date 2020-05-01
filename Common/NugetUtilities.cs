@@ -32,22 +32,22 @@ namespace Scar.Utilities
 
             var packageInfo = ParseNugetPackageInfoForPath(packageFilePath) ?? throw new InvalidOperationException("Package info is null");
 
-            var versionDirectoryPath = Path.Combine(extractionTempPath, packageInfo.Version.ToString());
-            if (!Directory.Exists(versionDirectoryPath))
+            var tempPackagePath = Path.Combine(extractionTempPath, packageInfo.ToString());
+            if (!Directory.Exists(tempPackagePath))
             {
-                Directory.CreateDirectory(versionDirectoryPath);
+                Directory.CreateDirectory(tempPackagePath);
             }
 
             var dllFileName = $"{packageInfo.Name}.dll";
             var nuspecFileName = $"{packageInfo.Name}.nuspec";
-            await ExtractPackageAsync(packageFilePath, processUtility, versionDirectoryPath, dllFileName).ConfigureAwait(false);
-            await ExtractPackageAsync(packageFilePath, processUtility, versionDirectoryPath, nuspecFileName).ConfigureAwait(false);
-            var dllFilePath = Path.Combine(versionDirectoryPath, dllFileName);
-            var nuspecFilePath = Path.Combine(versionDirectoryPath, nuspecFileName);
+            await ExtractPackageAsync(packageFilePath, processUtility, tempPackagePath, dllFileName).ConfigureAwait(false);
+            await ExtractPackageAsync(packageFilePath, processUtility, tempPackagePath, nuspecFileName).ConfigureAwait(false);
+            var dllFilePath = Path.Combine(tempPackagePath, dllFileName);
+            var nuspecFilePath = Path.Combine(tempPackagePath, nuspecFileName);
 
             await processPackageAsync(dllFilePath, nuspecFilePath).ConfigureAwait(false);
 
-            Directory.Delete(versionDirectoryPath, true);
+            Directory.Delete(tempPackagePath, true);
         }
 
         public static NugetPackageInfo? ParseNugetPackageInfoForPath(string filePath)

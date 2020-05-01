@@ -2,7 +2,7 @@
   "profiles": {
     "NugetCopier": {
       "commandName": "Project",
-      "commandLineArgs": "../../"
+      "commandLineArgs": "D:\\OneDrive\\Projects\\Libraries\\Scar.Common"
     }
   }
 }
