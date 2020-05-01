@@ -1,7 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <PackageReference Include="Scar.Common" Version="1.1.7424.15457" />
+    <PackageReference Include="Scar.Common" Version="1.1.7426.25083" />
+    <PackageReference Include="Scar.Common.IO" Version="1.1.7426.23253" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Utilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,5 +20,22 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="CopyOutput">
+    <ItemGroup>
+      <Directory Include="$(SolutionDir)..\Libraries\Scar.Common\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\CodeAnalysis\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\Windows Apps\Remembrance\Tools\$(ProjectName)" />
+    </ItemGroup>
+
+    <RemoveDir Directories="%(Directory.Identity)" />
+    <MakeDir Directories="%(Directory.Identity)" />
+    <Message Text="Copying output from $(PublishDir) to %(Directory.Identity)..." Importance="high" />
+    <Exec Command="xcopy &quot;$(ProjectDir)$(PublishDir.TrimEnd('\'))&quot; &quot;%(Directory.Identity)&quot; /e /y /i /r" />
+  </Target>
+
+  <Target Name="CustomActionsAfterPublish" AfterTargets="Publish">
+    <CallTarget Targets="CopyOutput" />
+  </Target>
 
 </Project>

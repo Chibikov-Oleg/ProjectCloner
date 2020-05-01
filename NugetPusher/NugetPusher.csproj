@@ -2,8 +2,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.3" />
-    <PackageReference Include="Scar.Common.Cryptography" Version="1.1.7424.15454" />
-    <PackageReference Include="Scar.Common.Processes" Version="1.1.7424.15536" />
+    <PackageReference Include="Scar.Common.Cryptography" Version="1.1.7426.25467" />
+    <PackageReference Include="Scar.Common.Processes" Version="1.1.7426.25564" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Utilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,5 +21,23 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="CopyOutput">
+    <ItemGroup>
+      <Directory Include="$(SolutionDir)..\Libraries\Scar.Common\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\CodeAnalysis\Tools\$(ProjectName)" />
+      <!--<Directory Include="$(SolutionDir)..\Windows Apps\Remembrance\Tools\$(ProjectName)" />-->
+    </ItemGroup>
+
+    <RemoveDir Directories="%(Directory.Identity)" />
+    <MakeDir Directories="%(Directory.Identity)" />
+    <Message Text="Copying output from $(PublishDir) to %(Directory.Identity)..." Importance="high" />
+    <Exec Command="xcopy &quot;$(ProjectDir)$(PublishDir.TrimEnd('\'))&quot; &quot;%(Directory.Identity)&quot; /e /y /i /r" />
+  </Target>
+
+  <Target Name="CustomActionsAfterPublish" AfterTargets="Publish">
+    <CallTarget Targets="CopyOutput" />
+  </Target>
+
 
 </Project>
