@@ -23,8 +23,10 @@
 
   <Target Name="CopyOutput">
     <ItemGroup>
-      <Directory Include="$(SolutionDir)..\Libraries\Scar.Common\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\Libraries\Common\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\Libraries\Services\Tools\$(ProjectName)" />
       <Directory Include="$(SolutionDir)..\CodeAnalysis\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\Services\Tools\$(ProjectName)" />
       <Directory Include="$(SolutionDir)..\Windows Apps\Remembrance\Tools\$(ProjectName)" />
     </ItemGroup>
 

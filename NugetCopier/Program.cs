@@ -126,9 +126,8 @@ namespace Scar.NugetCopier
 
                         return new NugetPackageInfo(name.Value, new Version(version.Value));
                     })
-                .Where(x => x != null && x.Name.StartsWith("Scar", StringComparison.OrdinalIgnoreCase))
-                .Cast<NugetPackageInfo>();
-            return packageInfos;
+                .Where(x => x != null && x.Name.StartsWith("Scar", StringComparison.OrdinalIgnoreCase));
+            return packageInfos!;
         }
 
         static void DeleteOutdatedPackagesFromCache(

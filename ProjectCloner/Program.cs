@@ -1,10 +1,12 @@
 using System;
 using System.IO;
+using System.Windows.Forms;
 
 namespace Scar.ProjectCloner
 {
     static class Program
     {
+        [STAThread]
         static void Main()
         {
             var completed = false;
@@ -12,17 +14,31 @@ namespace Scar.ProjectCloner
             {
                 try
                 {
-                    Console.WriteLine("Enter directory with template project: ");
-                    var directoryPath = Console.ReadLine();
+                    Console.Write("Enter directory with template project: ");
+                    string directoryPath;
+                    using (var fbd = new FolderBrowserDialog { AutoUpgradeEnabled = true })
+                    {
+                        if (fbd.ShowDialogWithLastChosenValue(Settings.Default, nameof(Settings.Default.LastValue)) == DialogResult.OK)
+                        {
+                            directoryPath = fbd.SelectedPath;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
 
                     if (string.IsNullOrWhiteSpace(directoryPath) || !Directory.Exists(directoryPath))
                     {
                         throw new InvalidOperationException("Directory does not exist");
                     }
 
+                    Console.WriteLine();
+                    Console.WriteLine(directoryPath);
+
                     var oldName = GetDirectoryName(directoryPath);
 
-                    Console.WriteLine("Enter new name: ");
+                    Console.Write("Enter new name: ");
                     var newName = Console.ReadLine();
 
                     if (string.IsNullOrWhiteSpace(newName))
