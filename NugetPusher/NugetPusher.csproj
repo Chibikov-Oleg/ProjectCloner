@@ -2,8 +2,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.3" />
-    <PackageReference Include="Scar.Common.Cryptography" Version="1.1.7426.25467" />
-    <PackageReference Include="Scar.Common.Processes" Version="1.1.7426.36565" />
+    <PackageReference Include="Scar.Common.Cryptography" Version="1.1.7441.17294" />
+    <PackageReference Include="Scar.Common.Processes" Version="1.1.7441.17422" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,6 +26,7 @@
     <ItemGroup>
       <Directory Include="$(SolutionDir)..\Libraries\Common\Tools\$(ProjectName)" />
       <Directory Include="$(SolutionDir)..\Libraries\Services\Tools\$(ProjectName)" />
+      <Directory Include="$(SolutionDir)..\Libraries\Topshelf.Quartz.Autofac\Tools\$(ProjectName)" />
       <Directory Include="$(SolutionDir)..\CodeAnalysis\Tools\$(ProjectName)" />
       <!--<Directory Include="$(SolutionDir)..\Windows Apps\Remembrance\Tools\$(ProjectName)" />-->
     </ItemGroup>

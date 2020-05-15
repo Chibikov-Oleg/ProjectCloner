@@ -72,18 +72,23 @@ namespace Scar.ProjectCloner
                 completed = true;
             }
 
-            static void RenameDirectory(string directoryPath, string oldName, string newName)
+            static void RenameDirectory(string directoryPath, string oldName, string newName, bool renameRoot = false)
             {
-                if (directoryPath.Contains(oldName, StringComparison.OrdinalIgnoreCase))
+                if (renameRoot)
                 {
-                    var newDirectoryPath = directoryPath.Replace(oldName, newName, StringComparison.OrdinalIgnoreCase);
-                    Directory.Move(directoryPath, newDirectoryPath);
-                    directoryPath = newDirectoryPath;
+                    var directoryName = GetDirectoryName(directoryPath);
+                    if (directoryName.Contains(oldName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var newDirectoryName = directoryName.Replace(oldName, newName, StringComparison.OrdinalIgnoreCase);
+                        var newDirectoryPath = Path.Combine(Directory.GetParent(directoryPath).FullName, newDirectoryName);
+                        Directory.Move(directoryPath, newDirectoryPath);
+                        directoryPath = newDirectoryPath;
+                    }
                 }
 
                 foreach (var subDirectoryPath in Directory.GetDirectories(directoryPath))
                 {
-                    RenameDirectory(subDirectoryPath, oldName, newName);
+                    RenameDirectory(subDirectoryPath, oldName, newName, true);
                 }
 
                 foreach (var filePath in Directory.GetFiles(directoryPath))

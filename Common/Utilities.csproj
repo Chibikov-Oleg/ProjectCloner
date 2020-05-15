@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.3" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="3.1.3" />
-    <PackageReference Include="Scar.Common.Processes" Version="1.1.7426.36565" />
+    <PackageReference Include="Scar.Common.Processes" Version="1.1.7441.17422" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
   </ItemGroup>
