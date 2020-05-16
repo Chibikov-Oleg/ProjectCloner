@@ -1,5 +1,6 @@
-#!/bin/sh
-cmd.exe /c "Tools\NugetCopier\Scar.NugetCopier.exe ."
+#!/bin/bash
+echo Tools/NugetCopier/Scar.NugetCopier.exe .
+Tools/NugetCopier/Scar.NugetCopier.exe .
 
 #sync added files only in Nuget folder (for some reason it doesn't work with -u)
 git add Nuget/*
